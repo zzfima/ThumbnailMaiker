@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 import time
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
@@ -15,6 +16,16 @@ class ThumbnailMakerService(object):
         self._home_dir = home_dir
         self._input_dir = self._home_dir + os.path.sep + 'incoming'
         self._output_dir = self._home_dir + os.path.sep + 'outgoing'
+        self._downloaded_bytes = 0
+
+    def __download_image(self, img_url):
+        img_filename = urlparse(img_url).path.split('/')[-1]
+        destination_path = self._input_dir + os.path.sep + img_filename
+        urlretrieve(img_url, destination_path)
+        image_size = os.path.getsize(destination_path)
+        lock = threading.Lock()
+        with lock:
+            self._downloaded_bytes += image_size
 
     def __download_images(self, img_url_list):
         # validate inputs
@@ -23,12 +34,16 @@ class ThumbnailMakerService(object):
         os.makedirs(self._input_dir, exist_ok=True)
 
         logging.info("beginning image downloads")
-
+        download_threads = []
         start = time.perf_counter()
         for url in img_url_list:
-            # download each image and save to the input dir
-            img_filename = urlparse(url).path.split('/')[-1]
-            urlretrieve(url, self._input_dir + os.path.sep + img_filename)
+            t = threading.Thread(target=self.__download_image, args=(url,))
+            t.start()
+            download_threads.append(t)
+
+        for t in download_threads:
+            t.join()
+
         end = time.perf_counter()
 
         logging.info("downloaded {} images in {} seconds".format(len(img_url_list), end - start))
@@ -71,4 +86,5 @@ class ThumbnailMakerService(object):
         self.__perform_resizing()
 
         end = time.perf_counter()
+        logging.info("Download size {} bytes".format(self._downloaded_bytes))
         logging.info("END make_thumbnails in {} seconds".format(end - start))
