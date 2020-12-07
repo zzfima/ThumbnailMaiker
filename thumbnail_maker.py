@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import os
 import threading
@@ -17,8 +18,12 @@ class ThumbnailMakerService(object):
         self._input_dir = self._home_dir + os.path.sep + 'incoming'
         self._output_dir = self._home_dir + os.path.sep + 'outgoing'
         self._downloaded_bytes = 0
+        max_concurrent_downloads = 4
+        self._downloads_semaphore = threading.BoundedSemaphore(max_concurrent_downloads)
 
     def __download_image(self, img_url):
+        self._downloads_semaphore.acquire()
+        print('start download image. ', threading.currentThread().ident, ' ', datetime.now().time())
         img_filename = urlparse(img_url).path.split('/')[-1]
         destination_path = self._input_dir + os.path.sep + img_filename
         urlretrieve(img_url, destination_path)
@@ -26,6 +31,7 @@ class ThumbnailMakerService(object):
         lock = threading.Lock()
         with lock:
             self._downloaded_bytes += image_size
+        self._downloads_semaphore.release()
 
     def __download_images(self, img_url_list):
         # validate inputs
