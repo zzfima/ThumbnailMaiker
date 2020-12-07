@@ -1,8 +1,8 @@
-from datetime import datetime
 import logging
 import os
 import threading
 import time
+from datetime import datetime
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
@@ -23,15 +23,17 @@ class ThumbnailMakerService(object):
 
     def __download_image(self, img_url):
         self._downloads_semaphore.acquire()
-        print('start download image. ', threading.currentThread().ident, ' ', datetime.now().time())
-        img_filename = urlparse(img_url).path.split('/')[-1]
-        destination_path = self._input_dir + os.path.sep + img_filename
-        urlretrieve(img_url, destination_path)
-        image_size = os.path.getsize(destination_path)
-        lock = threading.Lock()
-        with lock:
-            self._downloaded_bytes += image_size
-        self._downloads_semaphore.release()
+        try:
+            print('start download image. ', threading.currentThread().ident, ' ', datetime.now().time())
+            img_filename = urlparse(img_url).path.split('/')[-1]
+            destination_path = self._input_dir + os.path.sep + img_filename
+            urlretrieve(img_url, destination_path)
+            image_size = os.path.getsize(destination_path)
+            lock = threading.Lock()
+            with lock:
+                self._downloaded_bytes += image_size
+        finally:
+            self._downloads_semaphore.release()
 
     def __download_images(self, img_url_list):
         # validate inputs
