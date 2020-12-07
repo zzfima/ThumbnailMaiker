@@ -12,7 +12,7 @@ from PIL import Image
 logging.basicConfig(filename='logfile.log', level=logging.DEBUG)
 
 
-class ThumbnailMakerService(object):
+class ThumbnailMakerService_v1(object):
     def __init__(self, home_dir='.'):
         self._home_dir = home_dir
         self._input_dir = self._home_dir + os.path.sep + 'incoming'
