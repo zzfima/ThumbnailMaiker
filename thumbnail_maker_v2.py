@@ -24,10 +24,14 @@ class ThumbnailMakerService_v2(object):
         self.output_dir = self.home_dir + os.path.sep + 'outgoing'
         self.queue = Queue()
 
-    def download_image(self, url):
+    def download_image(self, url, is_last):
         img_filename = urlparse(url).path.split('/')[-1]
         urlretrieve(url, self.input_dir + os.path.sep + img_filename)
         self.queue.put(img_filename)
+
+        # poison pill
+        if is_last:
+            self.queue.put(None)
 
     def download_images(self, img_url_list):
         # validate inputs
@@ -38,17 +42,17 @@ class ThumbnailMakerService_v2(object):
         logging.info("beginning image downloads")
 
         start = time.perf_counter()
+        cnt_url = 0
         for url in img_url_list:
-            t = threading.Thread(target=self.download_image, args=(url,))
+            is_last = cnt_url == len(img_url_list)
+            t = threading.Thread(target=self.download_image, args=(url, is_last))
+            cnt_url += 1
             t.start()
         end = time.perf_counter()
 
         logging.info("downloaded {} images in {} seconds".format(len(img_url_list), end - start))
 
     def perform_resizing(self):
-        # validate inputs
-        if not os.listdir(self.input_dir):
-            return
         os.makedirs(self.output_dir, exist_ok=True)
 
         logging.info("beginning image resizing")
@@ -58,6 +62,10 @@ class ThumbnailMakerService_v2(object):
         start = time.perf_counter()
         while True:
             filename = self.queue.get()
+            if filename is None:
+                print('finish')
+                self.queue.task_done()
+                break
             orig_img = Image.open(self.input_dir + os.path.sep + filename)
             for basewidth in target_sizes:
                 img = orig_img
@@ -86,7 +94,7 @@ class ThumbnailMakerService_v2(object):
         thread_consumer = threading.Thread(target=self.perform_resizing)
         thread_consumer.start()
 
-        time.sleep(10)
+        thread_consumer.join()
 
         end = time.perf_counter()
         logging.info("END make_thumbnails in {} seconds".format(end - start))

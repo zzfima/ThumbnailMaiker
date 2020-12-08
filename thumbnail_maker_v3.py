@@ -17,7 +17,7 @@ from PIL import Image
 logging.basicConfig(filename='logfile.log', level=logging.DEBUG)
 
 
-class ThumbnailMakerService_v2(object):
+class ThumbnailMakerService_v3(object):
     def __init__(self, home_dir='.'):
         self.home_dir = home_dir
         self.input_dir = self.home_dir + os.path.sep + 'incoming'
@@ -33,19 +33,19 @@ class ThumbnailMakerService_v2(object):
         logging.info("beginning image downloads")
 
         start = time.perf_counter()
+        print('starts download')
         for url in img_url_list:
             # download each image and save to the input dir
             img_filename = urlparse(url).path.split('/')[-1]
             urlretrieve(url, self.input_dir + os.path.sep + img_filename)
             self.queue.put(img_filename)
+        print('finish download')
+        self.queue.put(None)
         end = time.perf_counter()
 
         logging.info("downloaded {} images in {} seconds".format(len(img_url_list), end - start))
 
     def perform_resizing(self):
-        # validate inputs
-        if not os.listdir(self.input_dir):
-            return
         os.makedirs(self.output_dir, exist_ok=True)
 
         logging.info("beginning image resizing")
@@ -54,7 +54,12 @@ class ThumbnailMakerService_v2(object):
 
         start = time.perf_counter()
         while True:
+            print('wait to start resize')
             filename = self.queue.get()
+            if filename is None:
+                self.queue.task_done()
+                break
+            print('resize ', filename)
             orig_img = Image.open(self.input_dir + os.path.sep + filename)
             for basewidth in target_sizes:
                 img = orig_img
@@ -70,6 +75,7 @@ class ThumbnailMakerService_v2(object):
 
             os.remove(self.input_dir + os.path.sep + filename)
             self.queue.task_done()
+            print('finish resize ', filename)
         end = time.perf_counter()
 
         logging.info("created {} thumbnails in {} seconds".format(num_images, end - start))
