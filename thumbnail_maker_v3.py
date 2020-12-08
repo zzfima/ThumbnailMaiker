@@ -24,11 +24,6 @@ class ThumbnailMakerService_v2(object):
         self.output_dir = self.home_dir + os.path.sep + 'outgoing'
         self.queue = Queue()
 
-    def download_image(self, url):
-        img_filename = urlparse(url).path.split('/')[-1]
-        urlretrieve(url, self.input_dir + os.path.sep + img_filename)
-        self.queue.put(img_filename)
-
     def download_images(self, img_url_list):
         # validate inputs
         if not img_url_list:
@@ -39,8 +34,10 @@ class ThumbnailMakerService_v2(object):
 
         start = time.perf_counter()
         for url in img_url_list:
-            t = threading.Thread(target=self.download_image, args=(url,))
-            t.start()
+            # download each image and save to the input dir
+            img_filename = urlparse(url).path.split('/')[-1]
+            urlretrieve(url, self.input_dir + os.path.sep + img_filename)
+            self.queue.put(img_filename)
         end = time.perf_counter()
 
         logging.info("downloaded {} images in {} seconds".format(len(img_url_list), end - start))
@@ -81,12 +78,13 @@ class ThumbnailMakerService_v2(object):
         logging.info("START make_thumbnails")
         start = time.perf_counter()
 
-        self.download_images(img_url_list)
-
+        thread_producer = threading.Thread(target=self.download_images, args=(img_url_list,))
+        thread_producer.start()
         thread_consumer = threading.Thread(target=self.perform_resizing)
         thread_consumer.start()
 
-        time.sleep(10)
+        thread_producer.join()
+        thread_consumer.join()
 
         end = time.perf_counter()
         logging.info("END make_thumbnails in {} seconds".format(end - start))
