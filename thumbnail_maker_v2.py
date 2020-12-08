@@ -1,3 +1,8 @@
+# consumer producer by using Queue
+# Download images put downloaded images into Queue (produce),
+# resizer get it from Queue (consume) and do resize
+# Both works as separate threads
+
 import logging
 import os
 import threading
