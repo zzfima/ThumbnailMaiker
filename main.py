@@ -2,6 +2,8 @@ from thumbnail_maker_v1 import ThumbnailMakerService_v1
 from thumbnail_maker_v2 import ThumbnailMakerService_v2
 from thumbnail_maker_v3 import ThumbnailMakerService_v3
 from thumbnail_maker_v4 import ThumbnailMakerService_v4
+from thumbnail_maker_v5 import ThumbnailMakerService_v5
+from thumbnail_maker_v6 import ThumbnailMakerService_v6
 
 IMG_URLS = \
     ['https://dl.dropboxusercontent.com/s/2fu69d8lfesbhru/pexels-photo-48603.jpeg',
@@ -32,5 +34,5 @@ IMG_URLS = \
      'https://dl.dropboxusercontent.com/s/rleff9tx000k19j/pexels-photo-341520.jpeg'
      ]
 
-tn_maker = ThumbnailMakerService_v4()
+tn_maker = ThumbnailMakerService_v5()
 tn_maker.make_thumbnails(IMG_URLS)
