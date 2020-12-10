@@ -1,4 +1,4 @@
-from thumbnail_maker_v6 import ThumbnailMakerService_v6
+from thumbnail_maker_v7 import ThumbnailMakerService_v7
 
 IMG_URLS = \
     ['https://dl.dropboxusercontent.com/s/2fu69d8lfesbhru/pexels-photo-48603.jpeg',
@@ -30,5 +30,5 @@ IMG_URLS = \
      ]
 
 if __name__ == '__main__':
-    tn_maker = ThumbnailMakerService_v6()
+    tn_maker = ThumbnailMakerService_v7()
     tn_maker.make_thumbnails(IMG_URLS)
