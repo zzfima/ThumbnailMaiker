@@ -60,6 +60,8 @@ class ThumbnailMakerService_v6(object):
 
     def make_thumbnails(self, img_url_list):
         logging.info("START make_thumbnails")
+        pool = multiprocessing.Pool()
+
         start = time.perf_counter()
         dl_queue = Queue()
         for img_url in img_url_list:
@@ -72,11 +74,9 @@ class ThumbnailMakerService_v6(object):
 
         dl_queue.join()
 
-        pool = multiprocessing.Pool()
         pool.map(self.resize_image, self.img_list)
 
+        end = time.perf_counter()
         pool.close()
         pool.join()
-
-        end = time.perf_counter()
         logging.info("END make_thumbnails in {} seconds".format(end - start))
